@@ -23,21 +23,47 @@ if api_key:
         if st.sidebar.checkbox("Show Available Properties"):
             st.sidebar.write(df)
             
-        # Chat interface
+        # --- CHAT MEMORY INTIALIZATION ---
+        if "chat_history" not in st.session_state:
+            st.session_state.chat_history = []
+            
         st.write("Ask me anything about properties in Dubai, London (UK), Paris (Europe), Istanbul, or New York!")
-        user_question = st.text_input("Your Question (e.g., Tell me about the London property or European apartments):")
         
-        if user_question:
-            # Prepare context from CSV file
+        # Display previous chat messages
+        for role, text in st.session_state.chat_history:
+            if role == "user":
+                st.markdown(f"*👤 You:* {text}")
+            else:
+                st.markdown(f"*🤖 AI:* {text}")
+        
+        # Form for user input to prevent automatic page reload on typing
+        with st.form(key="chat_form", clear_on_submit=True):
+            user_question = st.text_input("Your Question:")
+            submit_button = st.form_submit_button(label="Send")
+            
+        if submit_button and user_question:
+            # Append user question to history
+            st.session_state.chat_history.append(("user", user_question))
+            
+            # Prepare context from CSV file and history
             context = df.to_string()
-            prompt = f"You are a professional real estate agent assistant. Use the following property data to answer the user's question accurately. If the info is not in data, reply politely.\n\nData:\n{context}\n\nQuestion: {user_question}"
+            
+            # Format history for AI context
+            history_str = ""
+            for role, text in st.session_state.chat_history[:-1]:
+                history_str += f"{role}: {text}\n"
+                
+            prompt = f"You are a professional real estate agent assistant. Use the following property data and previous conversation history to answer the current question accurately. If the info is not in data, reply politely.\n\nData:\n{context}\n\nHistory:\n{history_str}\n\nCurrent Question: {user_question}"
             
             # Call the Latest Gemini Model
             model = genai.GenerativeModel('gemini-2.5-flash')
             response = model.generate_content(prompt)
             
-            st.subheader("AI Agent Response:")
-            st.write(response.text)
+            # Append AI response to history
+            st.session_state.chat_history.append(("ai", response.text))
+            
+            # Rerun the app to show the new message instantly
+            st.rerun()
             
     except FileNotFoundError:
         st.error("Please create and upload the 'properties.csv' file first.")
