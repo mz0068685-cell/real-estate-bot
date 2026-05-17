@@ -32,7 +32,7 @@ if api_key:
             prompt = f"You are a professional real estate agent assistant. Use the following property data to answer the user's question accurately. If the info is not in data, reply politely.\n\nData:\n{context}\n\nQuestion: {user_question}"
             
             # Call Gemini Model
-            model = genai.GenerativeModel('gemini-1.5-flash-latest')
+            model = genai.GenerativeModel('models/gemini-1.5-flash')
             response = model.generate_content(prompt)
             
             st.subheader("AI Agent Response:")
